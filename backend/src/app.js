@@ -15,14 +15,26 @@ const app = express();
 
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin:"https://sells-management.onrender.com",
+  credentials:true,
+}));
 
 app.get('/health', (req, res) => {
   res.send('API is running...');
 });
 
 setInterval(() => {
-   
+   fetch('https://sells-management.onrender.com/health')
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Health check failed');
+      }
+      console.log('Health check successful');
+    })
+    .catch(error => {
+      console.error('Health check error:', error);
+    });
 }, 5 * 60 * 1000);
 
 
