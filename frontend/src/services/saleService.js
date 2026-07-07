@@ -31,3 +31,14 @@ export const removeSale = async (data) => {
     const response = await api.post("/sale/remove", data);
     return response.data;
 };
+
+// Isko apne saleService.js me add karein agar pehle se nahi hai
+export const getWeeklySale = async () => {
+    const response = await axios.get(`/sales/weekly`); // Aapka backend endpoint
+    return response.data;
+};
+
+export const getMonthlySale = async () => {
+    const response = await axios.get(`/sales/monthly`); // Aapka backend endpoint
+    return response.data;
+};

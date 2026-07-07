@@ -2,6 +2,7 @@ import { Routes, Route } from "react-router-dom";
 
 import Home from "../pages/Home";
 import Calculator from "../pages/Calculator";
+import Revenue from "../pages/Revenue";
 
 const AppRoutes = () => {
     return (
@@ -12,6 +13,10 @@ const AppRoutes = () => {
             <Route
                 path="/calculator"
                 element={<Calculator />}
+            />
+            <Route
+              path="/revenue"
+              element={<Revenue/>}
             />
 
         </Routes>

@@ -134,10 +134,50 @@ export const getTotalRevenue = async (req, res) => {
 
 };
 
+// export const removeSale = async (req, res) => {
+
+//     try {
+
+//         const { itemName } = req.body;
+
+//         if (!itemName) {
+//             return res.status(400).json({
+//                 success: false,
+//                 message: "Item Name is required"
+//             });
+//         }
+
+//         const sale = await salemodel.findOneAndDelete(
+//             { itemName },
+//             { sort: { createdAt: -1 } }
+//         );
+
+//         if (!sale) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: "No Sale Found"
+//             });
+//         }
+
+//         res.status(200).json({
+//             success: true,
+//             message: "Sale Removed Successfully"
+//         });
+
+//     } catch (error) {
+
+//         res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+
+//     }
+
+// }
+
+
 export const removeSale = async (req, res) => {
-
     try {
-
         const { itemName } = req.body;
 
         if (!itemName) {
@@ -147,30 +187,109 @@ export const removeSale = async (req, res) => {
             });
         }
 
-        const sale = await salemodel.findOneAndDelete(
-            { itemName },
-            { sort: { createdAt: -1 } }
-        );
+        // Sabse latest sale dhoondhenge us item ki
+        const latestSale = await salemodel.findOne({ itemName }).sort({ createdAt: -1 });
 
-        if (!sale) {
+        if (!latestSale) {
             return res.status(404).json({
                 success: false,
-                message: "No Sale Found"
+                message: "No Sale Found to remove"
             });
+        }
+
+        // Agar entry me quantity 1 se zyada hai (jaise Calc se multiple items add hue thhe)
+        if (latestSale.quantity > 1) {
+            latestSale.quantity -= 1;
+            latestSale.total = latestSale.quantity * latestSale.price;
+            await latestSale.save(); // Sirf ek quantity aur uska total minus karke save kar diya
+        } else {
+            // Agar entry me sirf 1 hi quantity bachi hai, toh poori document remove kar denge
+            await salemodel.findByIdAndDelete(latestSale._id);
         }
 
         res.status(200).json({
             success: true,
-            message: "Sale Removed Successfully"
+            message: "1 Plate Removed Successfully"
         });
 
     } catch (error) {
-
         res.status(500).json({
             success: false,
             message: error.message
         });
-
     }
-
 }
+
+export const getWeeklySale = async (req, res) => {
+    try {
+        // Aaj se 7 din pehle ki starting (00:00:00) date nikalna
+        const startOfWeek = new Date();
+        startOfWeek.setDate(startOfWeek.getDate() - 7);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        // Aaj ke din ka end time
+        const endOfWeek = new Date();
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        const sales = await salemodel.find({
+            createdAt: {
+                $gte: startOfWeek,
+                $lte: endOfWeek
+            }
+        });
+
+        let totalSale = 0;
+        sales.forEach((sale) => {
+            totalSale += sale.total;
+        });
+
+        // Agar koi sale nahi mili (ya total 0 hai), toh frontend condition ke mutabik hum totalSale: 0 bhejenge
+        res.status(200).json({
+            success: true,
+            totalSale
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// 2. GET MONTHLY SALE CONTROLLER
+export const getMonthlySale = async (req, res) => {
+    try {
+        // Aaj se 30 din pehle ki starting (00:00:00) date nikalna
+        const startOfMonth = new Date();
+        startOfMonth.setDate(startOfMonth.getDate() - 30);
+        startOfMonth.setHours(0, 0, 0, 0);
+
+        // Aaj ke din ka end time
+        const endOfMonth = new Date();
+        endOfMonth.setHours(23, 59, 59, 999);
+
+        const sales = await salemodel.find({
+            createdAt: {
+                $gte: startOfMonth,
+                $lte: endOfMonth
+            }
+        });
+
+        let totalSale = 0;
+        sales.forEach((sale) => {
+            totalSale += sale.total;
+        });
+
+        res.status(200).json({
+            success: true,
+            totalSale
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
