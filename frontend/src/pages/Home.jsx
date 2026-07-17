@@ -1,14 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { 
-  TrendingUp, 
-  Calendar, 
-  LayoutDashboard, 
-  IndianRupee, 
-  Calculator as CalcIcon, 
-  Plus, 
-  Minus 
+import {
+  TrendingUp,
+  Calendar,
+  LayoutDashboard,
+  IndianRupee,
+  Calculator as CalcIcon,
+  Plus,
+  Minus,
+  UtensilsCrossed
 } from "lucide-react";
 
 // Weekly aur Monthly services ko import kiya
@@ -21,8 +22,16 @@ import logo from "../assets/logo.jpg";
 const Home = () => {
   const [todaySale, setTodaySale] = useState(0);
   const [revenue, setRevenue] = useState(0);
-  const [weeklySale, setWeeklySale] = useState(null);   // Initial state null rakha he
-  const [monthlySale, setMonthlySale] = useState(null); // Initial state null rakha he
+  const [weeklySale, setWeeklySale] = useState(null);
+  const [weeklyLabel, setWeeklyLabel] = useState("");
+
+
+
+  const [monthlySale, setMonthlySale] = useState(null);
+  const [monthlyLabel, setMonthlyLabel] = useState("");
+  const [remainingDays, setRemainingDays] = useState(null);
+
+
   const navigate = useNavigate();
 
   const fetchTodaySale = async () => {
@@ -47,9 +56,9 @@ const Home = () => {
   const fetchWeeklySale = async () => {
     try {
       const data = await getWeeklySale();
-      // Agar backend se total mile aur wo 0 se bada ho tabhi state set hogi
       if (data && data.totalSale > 0) {
         setWeeklySale(data.totalSale);
+        setWeeklyLabel(data.label);
       } else {
         setWeeklySale(null);
       }
@@ -63,10 +72,18 @@ const Home = () => {
   const fetchMonthlySale = async () => {
     try {
       const data = await getMonthlySale();
-      if (data && data.totalSale > 0) {
+
+      if (data.isAvailable) {
+
         setMonthlySale(data.totalSale);
+        setMonthlyLabel(data.label);
+        setRemainingDays(null);
+
       } else {
+
         setMonthlySale(null);
+        setRemainingDays(data.remainingDays);
+
       }
     } catch (error) {
       console.log(error);
@@ -96,7 +113,6 @@ const Home = () => {
   };
 
   const handleRemoveSale = async (itemName) => {
-    // Agar aaj ki sale pehle se 0 hai, toh minus karne ki zarurat nahi hai
     if (todaySale <= 0) {
       return toast.error("No sales recorded today to remove!");
     }
@@ -116,7 +132,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-[#dce5ed] text-[#0f172a] font-sans pb-24 max-w-md mx-auto relative shadow-md">
-      
+
       <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-100 sticky top-0 z-50">
         <h1 className="text-xl font-black text-[#b45309] tracking-tight">Kalpana Pani Puri</h1>
         <div className="w-9 h-9 rounded-full overflow-hidden border border-gray-200">
@@ -126,8 +142,13 @@ const Home = () => {
 
       <div className="p-4 space-y-5">
         <div className="flex items-center gap-2 mt-2">
-          <span className="text-2xl">🍴</span>
-          <h2 className="text-2xl font-black text-[#0f172a]">Sales Management</h2>
+          <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
+            <UtensilsCrossed className="text-orange-600" size={22} />
+          </div>
+
+          <h2 className="text-2xl font-black text-[#0f172a]">
+            Sales Management
+          </h2>
         </div>
 
         {/* Today's Sale */}
@@ -143,26 +164,72 @@ const Home = () => {
         <div className="grid grid-cols-2 gap-4">
           {/* Weekly Card */}
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-[0_4px_15px_rgba(0,0,0,0.01)]">
-            <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center mb-3">
-              <Calendar size={16} />
+
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-500 flex items-center justify-center">
+                <Calendar size={16} />
+              </div>
+
+              <h4 className="text-sm font-bold text-gray-500">
+                Weekly Sale
+              </h4>
             </div>
-            <p className="text-xs font-bold text-gray-400">Weekly Sale</p>
-            {/* Agar value he to dikhegi, nahi to khali ya '--' dikhega */}
-            <h4 className="text-lg font-black text-[#0369a1] mt-0.5">
-              {weeklySale !== null ? `₹${weeklySale.toLocaleString('en-IN')}` : "--"}
+
+            {/* Date Range */}
+            <p className="text-xs text-gray-400">
+              {weeklyLabel}
+            </p>
+
+            {/* Amount */}
+            <h4 className="text-lg font-black text-[#0369a1] mt-1">
+              ₹{weeklySale?.toLocaleString("en-IN")}
             </h4>
+
           </div>
 
           {/* Monthly Card */}
-          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-[0_4px_15px_rgba(0,0,0,0.01)]">
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-3">
-              <Calendar size={16} />
+          <div className="bg-white p-4 rounded-2xl border  border-gray-100 shadow-[0_4px_15px_rgba(0,0,0,0.01)]">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                <Calendar size={16} />
+              </div>
+
+              <p className="text-sm font-bold text-gray-500">
+                Monthly Sale
+              </p>
             </div>
-            <p className="text-xs font-bold text-gray-400">Monthly Sale</p>
             {/* Agar value he to dikhegi, nahi to khali ya '--' dikhega */}
-            <h4 className="text-lg font-black text-[#047857] mt-0.5">
-              {monthlySale !== null ? `₹${monthlySale.toLocaleString('en-IN')}` : "--"}
-            </h4>
+            {
+              remainingDays !== null ?
+
+                (
+                  <>
+                    <p className="text-xs text-gray-400">
+                      Available after {remainingDays} days
+                    </p>
+                    <h4 className="text-lg font-black text-[#047857]">
+                      --
+                    </h4>
+                  </>
+
+                )
+
+                :
+
+                (
+                  <>
+                    <p className="text-xs text-gray-400">
+                      {monthlyLabel}
+                    </p>
+
+                    <h4 className="text-lg font-black text-[#047857]">
+                      ₹{monthlySale?.toLocaleString("en-IN")}
+                    </h4>
+                  </>
+
+                )
+            }
           </div>
         </div>
 

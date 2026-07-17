@@ -59,7 +59,6 @@ const Revenue = () => {
     }, []);
 
     return (
-        // Padding bottom ko pb-24 kiya taaki content navigation bar ke piche na chupe
         <div className="min-h-screen bg-[#dce5ed] text-[#0f172a] font-sans pb-24 max-w-md mx-auto relative shadow-md">
 
             {/* 1. Top Header Navigation */}
@@ -92,11 +91,7 @@ const Revenue = () => {
                         {revenue.toLocaleString('en-IN')}
                     </h2>
 
-                    {/* Growth Tag */}
-                    <div className="inline-flex items-center gap-1 bg-white/10 text-orange-100 text-xs font-bold px-4 py-1.5 rounded-full mt-4 backdrop-blur-sm">
-                        <TrendingUp size={14} className="text-orange-200" />
-                        <span>12% Growth from last month</span>
-                    </div>
+        
                 </div>
 
                 {/* 3. Performance Summary Section */}

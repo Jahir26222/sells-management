@@ -220,33 +220,91 @@ export const removeSale = async (req, res) => {
     }
 }
 
+// export const getWeeklySale = async (req, res) => {
+//     try {
+//         // Aaj se 7 din pehle ki starting (00:00:00) date nikalna
+//         const startOfWeek = new Date();
+//         startOfWeek.setDate(startOfWeek.getDate() - 6);
+//         startOfWeek.setHours(0, 0, 0, 0);
+
+//         // Aaj ke din ka end time
+//         const endOfWeek = new Date();
+//         endOfWeek.setHours(23, 59, 59, 999);
+
+//         const sales = await salemodel.find({
+//             createdAt: {
+//                 $gte: startOfWeek,
+//                 $lte: endOfWeek
+//             }
+//         });
+
+//         let totalSale = 0;
+//         sales.forEach((sale) => {
+//             totalSale += sale.total;
+//         });
+
+//         // Agar koi sale nahi mili (ya total 0 hai), toh frontend condition ke mutabik hum totalSale: 0 bhejenge
+//         res.status(200).json({
+//             success: true,
+//             totalSale
+//         });
+
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+
+// 2. GET MONTHLY SALE CONTROLLER
+
+
+
 export const getWeeklySale = async (req, res) => {
     try {
-        // Aaj se 7 din pehle ki starting (00:00:00) date nikalna
-        const startOfWeek = new Date();
-        startOfWeek.setDate(startOfWeek.getDate() - 7);
-        startOfWeek.setHours(0, 0, 0, 0);
+        const today = new Date();
 
-        // Aaj ke din ka end time
-        const endOfWeek = new Date();
-        endOfWeek.setHours(23, 59, 59, 999);
+        // Monday = 1 ... Sunday = 0
+        const day = today.getDay();
+
+        // Previous week's Monday
+        const startDate = new Date(today);
+
+        if (day === 0) {
+            // Sunday
+            startDate.setDate(today.getDate() - 13);
+        } else {
+            startDate.setDate(today.getDate() - day - 6);
+        }
+
+        startDate.setHours(0, 0, 0, 0);
+
+        // Previous week's Sunday
+        const endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
 
         const sales = await salemodel.find({
             createdAt: {
-                $gte: startOfWeek,
-                $lte: endOfWeek
+                $gte: startDate,
+                $lte: endDate
             }
         });
 
-        let totalSale = 0;
-        sales.forEach((sale) => {
-            totalSale += sale.total;
-        });
+        const totalSale = sales.reduce((sum, sale) => sum + sale.total, 0);
 
-        // Agar koi sale nahi mili (ya total 0 hai), toh frontend condition ke mutabik hum totalSale: 0 bhejenge
+        const formatDate = (date) =>
+            date.toLocaleDateString("en-IN", {
+                weekday: "short",
+                day: "2-digit",
+                month: "short",
+            });
+
         res.status(200).json({
             success: true,
-            totalSale
+            totalSale,
+            label: `${formatDate(startDate)} - ${formatDate(endDate)}`
         });
 
     } catch (error) {
@@ -257,39 +315,112 @@ export const getWeeklySale = async (req, res) => {
     }
 };
 
-// 2. GET MONTHLY SALE CONTROLLER
+
+// export const getMonthlySale = async (req, res) => {
+
+
+//     try {
+//         // Aaj se 30 din pehle ki starting (00:00:00) date nikalna
+//         const startOfMonth = new Date();
+//         startOfMonth.setDate(startOfMonth.getDate() - 30);
+//         startOfMonth.setHours(0, 0, 0, 0);
+
+//         // Aaj ke din ka end time
+//         const endOfMonth = new Date();
+//         endOfMonth.setHours(23, 59, 59, 999);
+
+//         const sales = await salemodel.find({
+//             createdAt: {
+//                 $gte: startOfMonth,
+//                 $lte: endOfMonth
+//             }
+//         });
+
+//         let totalSale = 0;
+//         sales.forEach((sale) => {
+//             totalSale += sale.total;
+//         });
+
+//         res.status(200).json({
+//             success: true,
+//             totalSale
+//         });
+
+//     } catch (error) {
+//         res.status(500).json({
+//             success: false,
+//             message: error.message
+//         });
+//     }
+// };
+
+
+
 export const getMonthlySale = async (req, res) => {
     try {
-        // Aaj se 30 din pehle ki starting (00:00:00) date nikalna
-        const startOfMonth = new Date();
-        startOfMonth.setDate(startOfMonth.getDate() - 30);
-        startOfMonth.setHours(0, 0, 0, 0);
 
-        // Aaj ke din ka end time
-        const endOfMonth = new Date();
-        endOfMonth.setHours(23, 59, 59, 999);
+        // First Sale
+        const firstSale = await salemodel.findOne().sort({ createdAt: 1 });
+
+        if (!firstSale) {
+            return res.json({
+                success: true,
+                totalSale: null,
+                isAvailable: false,
+                remainingDays: 30
+            });
+        }
+
+        const today = new Date();
+
+        const diffDays = Math.floor(
+            (today - firstSale.createdAt) / (1000 * 60 * 60 * 24)
+        );
+
+        if (diffDays < 30) {
+            return res.json({
+                success: true,
+                totalSale: null,
+                isAvailable: false,
+                remainingDays: 30 - diffDays
+            });
+        }
+
+        const startDate = new Date();
+        startDate.setDate(today.getDate() - 29);
+        startDate.setHours(0, 0, 0, 0);
+
+        const endDate = new Date();
+        endDate.setHours(23, 59, 59, 999);
 
         const sales = await salemodel.find({
             createdAt: {
-                $gte: startOfMonth,
-                $lte: endOfMonth
+                $gte: startDate,
+                $lte: endDate
             }
         });
 
-        let totalSale = 0;
-        sales.forEach((sale) => {
-            totalSale += sale.total;
-        });
+        const totalSale = sales.reduce((sum, sale) => sum + sale.total, 0);
 
-        res.status(200).json({
+        const formatDate = (date) =>
+            date.toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short"
+            });
+
+        res.json({
             success: true,
-            totalSale
+            isAvailable: true,
+            totalSale,
+            label: `${formatDate(startDate)} - ${formatDate(endDate)}`
         });
 
     } catch (error) {
+
         res.status(500).json({
             success: false,
             message: error.message
         });
+
     }
 };
